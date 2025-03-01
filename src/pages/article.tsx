@@ -1,0 +1,118 @@
+import { useRouter } from "next/router";
+import axios from "axios";
+import { JSDOM } from "jsdom";
+import { Readability } from "@mozilla/readability";
+import { useEffect,useState } from "react";
+import Image from "next/image";
+import ErrorSVG from "../../public/assets/error.svg";
+import { Loader } from "lucide-react";
+
+function Article(props) {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  console.log(router.query);
+
+  if (props.error) {
+    return (
+      <div className="mx-auto p-4 mt-30 max-w-3xl ">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 capitalize flex gap-x-2 flex-col items-center">
+          <Image
+            src={ErrorSVG}
+            width={100}
+            height={100}
+            alt="No Data"
+            className="size-100"
+          />
+          <p className="font-semibold text-gray-500">
+            Something went wrong...{" "}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    const handleStart = () => {
+      setIsLoading(true);
+    };
+    const handleComplete = () => {
+      setIsLoading(false);
+    };
+
+    router.events.on("routeChangeStart", handleStart);
+    router.events.on("routeChangeComplete", handleComplete);
+    router.events.on("routeChangeError", handleComplete);
+
+    return () => {
+      router.events.off("routeChangeStart", handleStart);
+      router.events.off("routeChangeComplete", handleComplete);
+      router.events.off("routeChangeError", handleComplete);
+    };
+  }, [router]);
+
+  const textContentArray = props.article.textContent.split(".");
+ 
+  return (
+    <div
+      className="mx-auto p-4 mt-30 max-w-3xl "
+      // dangerouslySetInnerHTML={{ __html: props.article.content }}
+    >
+      {!isLoading ? (
+        !props.error && (
+          // <NewsContent articles={data.articles} />
+          <div>
+            {new Array(Math.ceil(textContentArray.length / 10)).map(
+              (item, index) => {
+                return (
+                  <div key={index}>
+                    {textContentArray
+                      .slice(index * 10, (index + 1) * 10)
+                      .join(".")}
+                  </div>
+                );
+              }
+            )}
+          </div>
+        )
+      ) : (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 capitalize flex gap-x-2">
+          <Loader className="animate-spin" />
+          <span>loading....</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export async function getServerSideProps(context) {
+  const { query } = context;
+
+  try {
+    const r2 = await axios.get(query.q);
+    const dom = new JSDOM(r2.data);
+    const article = new Readability(dom.window.document).parse();
+
+    // if (article) {
+    //   const articleData = {
+    //     title: article.title ?? null,
+    //     textContent: article.textContent ?? null,
+    //     excerpt: article.excerpt ?? null,
+    //     byline: article.byline ?? null,
+    //   };
+
+    return {
+      props: {
+        article: article,
+      },
+    };
+    // } else {
+    //   return { props: { error: "Article content not found" } };
+    // }
+  } catch (error) {
+    console.error("Error fetching article:", error);
+    return { props: { error: "Failed to fetch article" } };
+  }
+}
+
+export default Article;

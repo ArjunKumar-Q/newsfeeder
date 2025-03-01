@@ -1,114 +1,122 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import NewsContent from "@/components/default/content";
+import type { InferGetServerSidePropsType } from "next";
+import { useRouter } from "next/router";
+import { cn } from "@/lib/utils";
+import { Loader } from "lucide-react";
+import ErrorSVG from "../../public/assets/error.svg";
 import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export default function Home({
+  data,
+  error,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  useEffect(() => {
+    const handleStart = () => {
+      setIsLoading(true);
+    };
+    const handleComplete = () => {
+      setIsLoading(false);
+    };
 
-export default function Home() {
+    router.events.on("routeChangeStart", handleStart);
+    router.events.on("routeChangeComplete", handleComplete);
+    router.events.on("routeChangeError", handleComplete);
+
+    return () => {
+      router.events.off("routeChangeStart", handleStart);
+      router.events.off("routeChangeComplete", handleComplete);
+      router.events.off("routeChangeError", handleComplete);
+    };
+  }, [router]);
+
+  console.log(isLoading);
+
   return (
     <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
+      className={cn(
+        "w-full h-full ",
+        (isLoading || error || data.articles.length == 0) &&
+          "items-center justify-center"
+      )}
     >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+      {!isLoading ? (
+        !error ? (
+          <NewsContent articles={data.articles} />
+        ) : (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 capitalize flex gap-x-2 flex-col items-center">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src={ErrorSVG}
+              width={100}
+              height={100}
+              alt="No Data"
+              className="size-100"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <p className="font-semibold text-gray-500">
+              Something went wrong...{" "}
+            </p>
+            {/* <Button variant={'secondary'} size={'icon'} className="[&>*]:text-gray-500"><RotateCw className="size-5"/><span className="text-base font-bold"> Reload</span></Button> */}
+          </div>
+        )
+      ) : (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 capitalize flex gap-x-2">
+          <Loader className="animate-spin" />
+          <span>loading....</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
     </div>
   );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getServerSideProps(context: { query: any }) {
+  const { query } = context;
+  let response;
+  try {
+    if (query.search || query.language) {
+      response = await axios.get(
+        `${
+          process.env.NEXT_PUBLIC_NEWS_BASE_URL
+        }/everything?domains=techcrunch.com,bloomber.com,businessinsider.com${
+          query.search && `&q=${query.search}`
+        }${query.language ? `&language=${query.language}` : ""}&pageSize=50`,
+        {
+          headers: {
+            "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY,
+          },
+        }
+      );
+    } else {
+      response = await axios.get(
+        `${process.env.NEXT_PUBLIC_NEWS_BASE_URL}/top-headlines?${
+          query.category
+            ? `country=us&category=${query.category}`
+            : "country=us"
+        }`,
+        {
+          headers: {
+            "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY,
+          },
+        }
+      );
+    }
+    const data = response.data;
+
+    return {
+      props: {
+        data,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return {
+      props: {
+        error: "Failed to Fetch.",
+      },
+    };
+  }
 }
