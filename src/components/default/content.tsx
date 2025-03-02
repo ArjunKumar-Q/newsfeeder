@@ -1,14 +1,27 @@
 import { NewsArticle } from "@/types/types";
-import Image from "next/image";
 import NoData from "../../../public/assets/no-data.svg";
-import { useRouter } from "next/router";
 import { MainArticle, MainArticleTwo, Article } from "../article/ArticleCard";
+import { cn } from "@/lib/utils";
 
-const NewsContent = ({ articles }: { articles: NewsArticle[] }) => {
+import Image from "next/image";
+import { useRouter } from "next/router";
+
+const NewsContent = ({
+  articles,
+  isLoading,
+}: {
+  articles: NewsArticle[];
+  isLoading: boolean;
+}) => {
   const router = useRouter();
 
   return (
-    <main className="container mx-auto p-4 mt-30 w-full ">
+    <main
+      className={cn(
+        "container mx-auto p-4 mt-30 w-full",
+        isLoading && "hidden"
+      )}
+    >
       {articles.length > 0 ? (
         <>
           <section className="gap-4 mb-6  min-h-[30rem]">
@@ -18,8 +31,10 @@ const NewsContent = ({ articles }: { articles: NewsArticle[] }) => {
                   Search results for &quot;{router.query.search}&quot;
                 </div>
               ) : (
-                <div className="text-2xl font-bold my-4 text-[#1a73e8]">
-                  Top Headlines
+                <div className="text-2xl font-bold my-4 text-[#1a73e8] uppercase underline">
+                  {router.query.category
+                    ? `${router.query.category}`
+                    : "Top Headlines"}
                 </div>
               )}
             </div>
@@ -33,21 +48,23 @@ const NewsContent = ({ articles }: { articles: NewsArticle[] }) => {
             </div>
           </section>
 
-          <section id="content-row-2">
-            <div
-              id="content-section-2-heading"
-              className="text-2xl font-bold my-4 underline capitalize text-[#1a73e8]/90"
-            >
-              {router.query.search
-                ? `Top Reads for ${router.query.search}`
-                : "Hot News on the section "}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
-              {articles.slice(4).map((article) => (
-                <Article article={article} key={article.title} />
-              ))}
-            </div>
-          </section>
+          {articles.length >= 5 && (
+            <section id="content-row-2">
+              <div
+                id="content-section-2-heading"
+                className="text-xl font-bold my-4 underline  text-[#1a73e8]/90 uppercase"
+              >
+                {router.query.search
+                  ? `Top Reads for ${router.query.search}`
+                  : "Hot News on the section "}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
+                {articles.slice(4).map((article) => (
+                  <Article article={article} key={article.title} />
+                ))}
+              </div>
+            </section>
+          )}
         </>
       ) : (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-x-2 flex-col items-center">

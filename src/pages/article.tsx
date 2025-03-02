@@ -1,23 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import FallbackImage from "@/components/article/CustomImage";
+import ErrorSVG from "../../public/assets/error.svg";
+import { JSDOMArticle } from "@/types/types";
+
 import { useRouter } from "next/router";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import { useEffect, useState } from "react";
-import ErrorSVG from "../../public/assets/error.svg";
 import { Loader } from "lucide-react";
 import Link from "next/link";
 import { GetServerSidePropsContext } from "next";
 import Image from "next/image";
-import FallbackImage from "@/components/article/CustomImage";
-// import { NewsArticle } from "@/types/types";
 
-interface ArticleProps {
-  article: any; // Replace 'any' with a more specific type if possible
+interface SingleArticle {
+  article: JSDOMArticle;
   error?: string;
 }
 
-function Article(props: ArticleProps) {
+function Article(props: SingleArticle) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   console.log(router.query);
@@ -88,14 +88,13 @@ function Article(props: ArticleProps) {
             </div>
             <div className="my-4">
               <FallbackImage
-                src={router.query.img || "/assets/fallback.png"}
+                src={router.query.img as string}
                 height={100}
                 width={100}
                 fallbackSrc="/assets/fallback.png"
                 alt={props.article.title}
                 className="w-full rounded-md"
                 layout="responsive"
-                priority
               />
             </div>
             {Array.from({
@@ -133,22 +132,11 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     const dom = new JSDOM(r2.data);
     const article = new Readability(dom.window.document).parse();
 
-    // if (article) {
-    //   const articleData = {
-    //     title: article.title ?? null,
-    //     textContent: article.textContent ?? null,
-    //     excerpt: article.excerpt ?? null,
-    //     byline: article.byline ?? null,
-    //   };
-
     return {
       props: {
         article: article,
       },
     };
-    // } else {
-    //   return { props: { error: "Article content not found" } };
-    // }
   } catch (error) {
     console.error("Error fetching article:", error);
     return { props: { error: "Failed to fetch article" } };

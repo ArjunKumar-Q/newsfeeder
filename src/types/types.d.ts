@@ -17,3 +17,16 @@ export type NewsContextState = {
   search: string;
   category: string | null;
 };
+
+export type JSDOMArticle = {
+  title: string;
+  byline: string;
+  dir: string;
+  lang: string;
+  content: string;
+  length: number;
+  excerpt: string;
+  siteName: null | string;
+  publishedTime: string;
+  textContent: string;
+};

@@ -1,39 +1,30 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import axios from "axios";
+import ErrorSVG from "../../public/assets/error.svg";
 import NewsContent from "@/components/default/content";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+import { useEffect, useState } from "react";
+import axios, { AxiosResponse } from "axios";
 import type { InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
-import { cn } from "@/lib/utils";
 import { Loader } from "lucide-react";
-import ErrorSVG from "../../public/assets/error.svg";
 import Image from "next/image";
 import { GetServerSidePropsContext } from "next";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
+const MAX_PAGES = 5;
 
 export default function Home({
   data,
   error,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
-  const { query } = router;
-  const [articles, setArticles] = useState(data?.articles || []);
+  const [articles, setArticles] = useState(data.articles || []);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const totalResultsRef = useRef(data?.totalResults || 0);
-  const observerRef = useRef(null);
-
-  console.log(articles);
-
-  useEffect(() => {
-    setArticles(data?.articles || []);
-    setPage(1);
-    totalResultsRef.current = data?.totalResults || 0;
-  }, [data]);
-
-  const hasMore = useMemo(
-    () => articles.length < totalResultsRef.current,
-    [articles.length]
+  const maxPages = Math.min(
+    MAX_PAGES,
+    Math.ceil(data.totalResults / PAGE_SIZE)
   );
 
   useEffect(() => {
@@ -51,53 +42,65 @@ export default function Home({
     };
   }, [router]);
 
-  const fetchMoreArticles = useCallback(async () => {
-    if (!hasMore || isLoading) return;
-    setIsLoading(true);
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_NEWS_BASE_URL}/everything?domains=techcrunch.com,bloomberg.com,businessinsider.com&page=${page}&pageSize=${PAGE_SIZE}`,
-        {
-          headers: { "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY },
-        }
-      );
-      setArticles((prevArticles) => [
-        ...prevArticles,
-        ...response.data.articles,
-      ]);
-    } catch (error) {
-      console.error("Error fetching more articles:", error);
-    }
-    setIsLoading(false);
-  }, [page, hasMore, isLoading]);
-
   useEffect(() => {
-    if (!hasMore) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setPage((prevPage) => prevPage + 1);
+    const fetchArticles = async () => {
+      setIsLoading(true);
+      let response: AxiosResponse;
+      try {
+        if (router.query.search || router.query.language) {
+          response = await axios.get(
+            `${
+              process.env.NEXT_PUBLIC_NEWS_BASE_URL
+            }/everything?domains=techcrunch.com,bloomber.com,businessinsider.com${
+              router.query.search && `&q=${router.query.search}`
+            }${
+              router.query.language ? `&language=${router.query.language}` : ""
+            }&pageSize=${PAGE_SIZE}&page=${page}`,
+
+            {
+              headers: {
+                "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY,
+              },
+            }
+          );
+        } else {
+          response = await axios.get(
+            `${process.env.NEXT_PUBLIC_NEWS_BASE_URL}/top-headlines?${
+              router.query.category
+                ? `country=us&category=${router.query.category}`
+                : "country=us"
+            }&pageSize=${PAGE_SIZE}&page=${page}`,
+
+            {
+              headers: {
+                "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY,
+              },
+            }
+          );
         }
-      },
-      { threshold: 1.0 }
-    );
 
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
+        setArticles(() => [...response.data.articles]);
+      } catch (error) {
+        console.error("Error fetching more articles:", error);
       }
+      setIsLoading(false);
     };
-  }, [hasMore]);
+
+    if (page <= maxPages) {
+      fetchArticles();
+    }
+  }, [
+    page,
+    maxPages,
+    router.query.search,
+    router.query.language,
+    router.query.category,
+  ]);
 
   useEffect(() => {
-    if (page > 1) {
-      fetchMoreArticles();
-    }
-  }, [page, fetchMoreArticles]);
+    setPage(1);
+    setArticles(data.articles);
+  }, [data.articles, router.query]);
 
   return (
     <div
@@ -115,20 +118,33 @@ export default function Home({
           <p className="font-semibold text-gray-500">Something went wrong...</p>
         </div>
       ) : (
-        <>
-          <NewsContent articles={articles} />
-          <div ref={observerRef} className="flex justify-center py-4">
+        <div className="flex flex-col justify-between">
+          <NewsContent articles={articles} isLoading={isLoading} />
+          <div className="flex justify-center py-4">
             {isLoading && (
-              <div className="flex items-center gap-x-2">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 capitalize flex gap-x-2">
                 <Loader className="animate-spin" />
-                <span>Loading more articles...</span>
+                <span>loading....</span>
               </div>
             )}
-            {!hasMore && (
-              <p className="text-gray-500">No more content to fetch</p>
-            )}
+            <div className="flex gap-x-2">
+              {[...Array(maxPages)].map((_, index) => (
+                <Button
+                  key={index}
+                  variant={"default"}
+                  className={cn(
+                    "h-10 w-10 px-4 py-2 rounded-full border",
+                    page === index + 1 ? " text-white" : "bg-slate-400"
+                  )}
+                  onClick={() => setPage(index + 1)}
+                  disabled={isLoading}
+                >
+                  {index + 1}
+                </Button>
+              ))}
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -136,40 +152,52 @@ export default function Home({
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { query } = context;
+
   let response;
+
   try {
-    if (query.search || query.language || query.category) {
+    if (query.search || query.language) {
       response = await axios.get(
         `${
           process.env.NEXT_PUBLIC_NEWS_BASE_URL
         }/everything?domains=techcrunch.com,bloomber.com,businessinsider.com${
-          query.search ? `&q=${query.search}` : ""
+          query.search && `&q=${query.search}`
         }${
           query.language ? `&language=${query.language}` : ""
-        }&page=1&pageSize=${PAGE_SIZE}`,
+        }&pageSize=${PAGE_SIZE}`,
+
         {
-          headers: { "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY },
+          headers: {
+            "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY,
+          },
         }
       );
     } else {
       response = await axios.get(
-        `${process.env.NEXT_PUBLIC_NEWS_BASE_URL}/top-headlines?country=us`,
+        `${process.env.NEXT_PUBLIC_NEWS_BASE_URL}/top-headlines?${
+          query.category
+            ? `country=us&category=${query.category}`
+            : "country=us"
+        }&pageSize=${PAGE_SIZE}&page=1`,
+
         {
-          headers: { "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY },
+          headers: {
+            "X-Api-key": process.env.NEXT_PUBLIC_NEWS_API_KEY,
+          },
         }
       );
     }
-    console.log(response.data);
+
+    const data = response.data;
+
     return {
       props: {
-        data: {
-          articles: response.data.articles,
-          totalResults: response.data.totalResults,
-        },
+        data,
       },
     };
   } catch (error) {
     console.error("Error fetching data:", error);
+
     return { props: { error: "Failed to Fetch." } };
   }
 }

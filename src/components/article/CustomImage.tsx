@@ -5,7 +5,7 @@ interface FallbackImageProps {
   src: string;
   alt: string;
   fallbackSrc: string;
-  [key: string]: any;
+[key: string]: string | number;
 }
 
 const FallbackImage = ({
@@ -22,7 +22,7 @@ const FallbackImage = ({
 
   return (
     <Image
-      src={src !== "null" && src}
+      src={src !== "null" ? src : fallbackSrc}
       alt={alt}
       {...props}
       onError={() => setIsError(true)}

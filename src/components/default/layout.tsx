@@ -1,8 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { cn } from "@/lib/utils";
 import Header from "./header";
+import { PropsWithChildren, HTMLAttributes } from "react";
 
-export default function Layout({ children, ...props }: any) {
+export default function Layout({
+  children,
+  ...props
+}: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) {
   return (
     <div
       className={cn(

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ModeToggle } from "./dark_mode";
 import { Newspaper } from "lucide-react";
 import {
@@ -31,9 +30,9 @@ const Header = () => {
   ];
   const [search, setSearch] = useState("");
 
-  const debounce = (func: (...args: any[]) => void, wait: number) => {
+  const debounce = <T extends unknown[]>(func: (...args: T) => void, wait: number) => {
     let timeout: NodeJS.Timeout;
-    return (...args: any[]) => {
+    return (...args: T) => {
       clearTimeout(timeout);
       timeout = setTimeout(() => func(...args), wait);
     };

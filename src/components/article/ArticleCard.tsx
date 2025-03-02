@@ -1,7 +1,8 @@
-import Image from "next/image";
-import Link from "next/link";
 import { formatTo12Hour, cn } from "@/lib/utils";
 import { NewsArticle } from "@/types/types";
+
+import Image from "next/image";
+import Link from "next/link";
 
 export const MainArticle = ({ article }: { article: NewsArticle }) => {
   return (
@@ -17,7 +18,6 @@ export const MainArticle = ({ article }: { article: NewsArticle }) => {
         className="w-full h-full  group-hover:scale-110 group-hover:opacity-60 transition-all duration-300 ease-in-out "
         alt={article.title}
         layout="responsive"
-        // objectFit="cover"
         fetchPriority="high"
       />
       <p className="absolute bottom-6 left-4 p-2 w-[95%]">
@@ -83,7 +83,7 @@ export const MainArticleTwo = ({ article }: { article: NewsArticle }) => {
 
 export const Article = ({ article }: { article: NewsArticle }) => {
   return (
-    <div className="group" key={article.title}>
+    <div className="group " key={article.title}>
       <Link
         href={`/article?q=${article.url}&img=${article.urlToImage}`}
         className="flex  space-x-4 p-2 bg-white dark:bg-slate-800 border rounded-lg dark:hover:bg-gray-900 "
@@ -97,7 +97,7 @@ export const Article = ({ article }: { article: NewsArticle }) => {
           loading="lazy"
           fetchPriority="low"
         />
-        <div className="flex flex-col justify-between px-2 ">
+        <div className="flex flex-col justify-between px-2  overflow-hidden ">
           <div className="pr-2">
             <h2 className="text-lg font-semibold line-clamp-1">
               {article.title}
