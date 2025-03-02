@@ -1,13 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/router";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
-import { useEffect,useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import ErrorSVG from "../../public/assets/error.svg";
 import { Loader } from "lucide-react";
+import Link from "next/link";
+import { GetServerSidePropsContext } from "next";
+import Image from "next/image";
+import FallbackImage from "@/components/article/CustomImage";
+// import { NewsArticle } from "@/types/types";
 
-function Article(props) {
+interface ArticleProps {
+  article: any; // Replace 'any' with a more specific type if possible
+  error?: string;
+}
+
+function Article(props: ArticleProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   console.log(router.query);
@@ -52,27 +62,57 @@ function Article(props) {
   }, [router]);
 
   const textContentArray = props.article.textContent.split(".");
- 
+  const articleImage = props.article.content.match(/<img[^>]+src="([^"]+)"/g);
+  console.log(articleImage);
+
   return (
-    <div
-      className="mx-auto p-4 mt-30 max-w-3xl "
-      // dangerouslySetInnerHTML={{ __html: props.article.content }}
-    >
+    <div className="mx-auto p-4 mt-30 max-w-3xl ">
       {!isLoading ? (
         !props.error && (
-          // <NewsContent articles={data.articles} />
           <div>
-            {new Array(Math.ceil(textContentArray.length / 10)).map(
-              (item, index) => {
-                return (
+            <div className="my-3"></div>
+            <Link
+              href={router.query.q as string}
+              target="_blank"
+              className="text-xl font-bold my-4 underline"
+            >
+              {props.article.title}
+            </Link>
+            <div className="my-3"></div>
+            <div className="my-6 flex flex-row justify-between gap-y-2 ">
+              <span className="font-semibold">by {props.article.byline}</span>
+              <span className="font-medium">
+                {props.article.publishedTime &&
+                  new Date(props.article.publishedTime).toDateString()}
+              </span>
+            </div>
+            <div className="my-4">
+              <FallbackImage
+                src={router.query.img || "/assets/fallback.png"}
+                height={100}
+                width={100}
+                fallbackSrc="/assets/fallback.png"
+                alt={props.article.title}
+                className="w-full rounded-md"
+                layout="responsive"
+                priority
+              />
+            </div>
+            {Array.from({
+              length: Math.ceil(textContentArray.length / 10),
+            }).map((item, index) => {
+              return (
+                <>
                   <div key={index}>
                     {textContentArray
-                      .slice(index * 10, (index + 1) * 10)
-                      .join(".")}
+                      .slice(index * 5, (index + 1) * 5)
+                      .join(".")
+                      .replaceAll("—–", "")}
                   </div>
-                );
-              }
-            )}
+                  <div className="my-6"></div>
+                </>
+              );
+            })}
           </div>
         )
       ) : (
@@ -85,11 +125,11 @@ function Article(props) {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { query } = context;
 
   try {
-    const r2 = await axios.get(query.q);
+    const r2 = await axios.get(query.q as string);
     const dom = new JSDOM(r2.data);
     const article = new Readability(dom.window.document).parse();
 

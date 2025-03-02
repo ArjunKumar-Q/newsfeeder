@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ModeToggle } from "./dark_mode";
-import { Newspaper} from "lucide-react";
+import { Newspaper } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -41,19 +41,11 @@ const Header = () => {
 
   const handleCategoryChange = (category: string) => {
     if (category != "Home") {
-      const resetParams = { ...router.query, category: category.toLowerCase() };
-      if (resetParams?.search) delete resetParams.search;
-      if (resetParams?.q) delete resetParams.q;
       router.push({
         pathname: "/",
-        query: { ...resetParams },
+        query: { category: category.toLowerCase() },
       });
     } else {
-      const resetParams = { ...router.query };
-      if (resetParams?.search) delete resetParams.search;
-      if (resetParams.q) delete resetParams.q;
-
-      delete resetParams.category;
       router.push({
         pathname: "/",
         query: {},
@@ -75,6 +67,7 @@ const Header = () => {
 
   const searchButtonHandler = () => {
     setActiveCategory("Search");
+    setSearchOpen(false);
     router.push({
       pathname: "/",
       query: {
@@ -114,7 +107,7 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <ModeToggle />
           <Select
-            value={router.query.language || "en"}
+            value={(router.query.language as string) || "en"}
             onValueChange={(value) => {
               router.push({
                 pathname: "/",
